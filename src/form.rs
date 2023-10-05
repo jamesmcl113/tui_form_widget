@@ -21,32 +21,31 @@ pub struct Field<'a> {
 }
 
 impl<'a> Field<'a> {
-    pub fn valid(name: &'a str, val: &'a str) -> Field<'a> {
+    pub(crate) fn valid(name: &'a str, val: &'a str) -> Field<'a> {
         Self {
             fd: FieldData { name, val },
             status: FieldStatus::Valid,
         }
     }
 
-    pub fn invalid(name: &'a str, val: &'a str) -> Field<'a> {
+    pub(crate) fn invalid(name: &'a str, val: &'a str) -> Field<'a> {
         Self {
             fd: FieldData { name, val },
             status: FieldStatus::Invalid,
         }
     }
 
+    /// Name of the underlying field.
     pub fn name(&self) -> &str {
         self.fd.name
     }
 
+    /// Value of the underlying field.
     pub fn value(&self) -> &str {
         self.fd.val
     }
 
-    fn inner(&self) -> &FieldData<'_> {
-        &self.fd
-    }
-
+    /// Returns `true` if the underlying field is currently valid.
     pub fn is_valid(&self) -> bool {
         match self.status {
             FieldStatus::Valid => true,
@@ -62,10 +61,14 @@ struct FieldData<'a> {
 }
 
 type FormFieldStatus<'a> = Vec<Field<'a>>;
+/// Enumerates possible states of a [`Form`]s currently selected field.
 #[derive(PartialEq)]
 pub enum FormSelection {
+    /// No field selected
     NoSelection,
+    /// Hovered, but not receiving text input
     Hovered(usize),
+    /// Receiving text input
     Active(usize),
 }
 
@@ -113,12 +116,14 @@ impl From<Vec<FieldBuffer>> for Form {
     }
 }
 
-/// A widget to display data in a collection of fields
+/// A widget to display data in a collection of fields, and allow editing of a currently selected
+/// field.
 ///
 /// # Example
 ///
-/// ```rust
-/// let form = Form::new(&["A", "B", "C"], |field| !field.is_empty());
+/// ```
+/// # use tui_form_widget::{Form, FormSelection};
+/// let mut form = Form::new(&["A", "B", "C"], |field| !field.is_empty());
 ///
 /// // all fields remain valid until form is submitted.
 /// assert_eq!(form.status().iter().all(|field| field.is_valid()), true);
@@ -129,7 +134,7 @@ impl From<Vec<FieldBuffer>> for Form {
 ///
 /// form.select(FormSelection::Active(0));
 /// form.append_selection('a');
-/// assert!(form.status[0].is_valid());
+/// assert!(form.status()[0].is_valid());
 /// ```
 pub struct Form {
     selected: FormSelection,
@@ -176,14 +181,18 @@ impl Form {
         }
     }
 
+    /// Returns a tui [`Widget`](ratatui::widgets::Widget) to be used for rendering with
+    /// [`render_frame`][ratatui::terminal::Frame::render_widget].
     pub fn widget(&self) -> impl Widget + '_ {
         Renderer::new(self)
     }
 
+    /// Change current selection of the form.
     pub fn select(&mut self, s: FormSelection) {
         self.selected = s;
     }
 
+    /// Get current selection state of the form.
     pub fn selected(&self) -> &FormSelection {
         &self.selected
     }
@@ -216,6 +225,7 @@ impl Form {
         }
     }
 
+    /// Handle default input for the form.
     pub fn input(&mut self, key: KeyCode) {
         if let FormSelection::Active(i) = self.selected {
             match key {
@@ -250,6 +260,7 @@ impl Form {
         self.fields[field].val.push(ch)
     }
 
+    /// Append a char to the active field (if one is)
     pub fn append_selection(&mut self, ch: char) {
         match self.selected() {
             FormSelection::NoSelection => {}
@@ -258,6 +269,7 @@ impl Form {
         }
     }
 
+    /// Remove a char frome the active field (if one is)
     pub fn pop_selection(&mut self) {
         match self.selected() {
             FormSelection::NoSelection => {}
@@ -266,10 +278,12 @@ impl Form {
         }
     }
 
+    /// De(select / activate) current field
     pub fn deselect(&mut self) {
         self.selected = FormSelection::NoSelection
     }
 
+    /// Move to next field. Retains previous hovered or activated state.
     pub fn next_field(&mut self) {
         self.selected = match self.selected {
             FormSelection::NoSelection => FormSelection::Hovered(0),
@@ -282,6 +296,7 @@ impl Form {
         }
     }
 
+    /// Move to previous field. Retains previous hovered or activated state.
     pub fn prev_field(&mut self) {
         self.selected = match self.selected {
             FormSelection::NoSelection => FormSelection::Hovered(0),
@@ -301,18 +316,22 @@ impl Form {
         self.submitted = submitted;
     }
 
+    /// Set style for the active field.
     pub fn active_field_style(&mut self, style: Style) {
         self.active_field_style = style;
     }
 
+    /// Set style for any invalid fields.
     pub fn invalid_field_style(&mut self, style: Style) {
         self.invalid_field_style = style;
     }
 
+    /// Set the style for the hovered field.
     pub fn hovered_field_style(&mut self, style: Style) {
         self.hovered_field_style = style;
     }
 
+    /// Set style for a valid, unselected field.
     pub fn default_field_style(&mut self, style: Style) {
         self.default_field_style = style;
     }
