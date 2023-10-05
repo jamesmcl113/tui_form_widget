@@ -2,6 +2,11 @@
 name = "tui-form-widget"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0" 
+description = "A ratatui form widget for rendering data in editable fields."
+homepage = "https://github.com/jamesmcl113/tui_form_widget"
+repository = "https://github.com/jamesmcl113/tui_form_widget"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
